@@ -32,6 +32,9 @@ class BaseTestCases:
                              self._trie.search("iphone", "os", "5", "0", "1", "ipodtouch"))
 
         def test_approximate_match(self):
+            # From `uname -a` on a System76 laptop:
+            # Linux pop-os 5.3.0-22-generic #24+system76~1573659475~19.04~26b2022-Ubuntu SMP Wed Nov 13 20:0 x86_64
+            # x86_64 x86_64 GNU/Linux
             self.assertEqual({"Canonical Ubuntu Linux 19.04"},
                              self._trie.search("Linux" "pop-os" "5", "3", "0", "22", "generic", "#24", "system76",
                                                "1573659475", "19", "04", "26b2022", "Ubuntu", "SMP",
