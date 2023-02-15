@@ -22,8 +22,9 @@ def fetch_from_nvd_api(url: str = "https://services.nvd.nist.gov/rest/json/cpes/
                        part: Part = Part.OPERATING_SYSTEM,
                        vendor: str = "",
                        cutoff: str = "1970-01-01T00:00:00.000",
+                       exclude_keywords: list[str] = ["firmware"],
                        destination_dir: str = "/tmp/product_search",
-                       pause: float = 1
+                       pause: float = 2
                        ) -> str:
     """
     Fetch CPE strings using the NVD API, and store them locally.
@@ -33,6 +34,7 @@ def fetch_from_nvd_api(url: str = "https://services.nvd.nist.gov/rest/json/cpes/
     :param part:
     :param vendor:
     :param cutoff:
+    :param exclude_keywords:
     :param destination_dir:
     :param pause
     :return:
@@ -60,7 +62,12 @@ def fetch_from_nvd_api(url: str = "https://services.nvd.nist.gov/rest/json/cpes/
                     tries -= 1
                     continue
 
-                products: list[dict] | None = parse_response(response.json() or {}, now, cutoff)
+                products: list[dict] | None = parse_response(response.json() or {}, now, cutoff=cutoff,
+                                                             exclude_keywords=exclude_keywords)
+
+                if products is None:
+                    logging.info("")
+                    break
 
                 if not products:
                     tries -= 1
@@ -69,7 +76,7 @@ def fetch_from_nvd_api(url: str = "https://services.nvd.nist.gov/rest/json/cpes/
                 for product in products:
                     f.write(f"    {json.dumps(product)},\n")
 
-                tries = 5
+                tries = 10
 
             except httpx.HTTPError as he:
                 logging.warning(f"Query \"{query_str.replace('%', '%%')}\" failed.", he)
@@ -81,6 +88,7 @@ def fetch_from_nvd_api(url: str = "https://services.nvd.nist.gov/rest/json/cpes/
             time.sleep(pause)
 
         f.truncate(f.tell() - 2)
+        f.seek(0, 2)
         f.write("]")
 
         if tries <= 0:
@@ -89,15 +97,17 @@ def fetch_from_nvd_api(url: str = "https://services.nvd.nist.gov/rest/json/cpes/
     return destination_file
 
 
-def parse_response(response: dict, now: str, cutoff: str) -> list[dict] | None:
+def parse_response(response: dict, now: str, cutoff: str = "1970-01-01T00:00:00.000",
+                   exclude_keywords: list[str] = []) -> list[dict] | None:
     """
 
     :param response:
     :param now:
     :param cutoff:
+    :param exclude_keywords:
     :return:
     """
-    if not response or response.get("resultsPerPage", 0) <= 0:
+    if response.get("resultsPerPage", 0) <= 0:
         # We have reached the end!
         return None
 
@@ -111,6 +121,7 @@ def parse_response(response: dict, now: str, cutoff: str) -> list[dict] | None:
         {"cpe_name": product.get("cpeName"), "title": product.get("titles", [{"title": ""}])[0].get("title")} for
         product in products if
         not (product.get("deprecated", True) and
-             product.get("lastModified", now) <= cutoff)]
+             product.get("lastModified", now) <= cutoff) and
+        any(filter(lambda x: x not in product.get("cpeName"), exclude_keywords))]
 
     return filtered_products
