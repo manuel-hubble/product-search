@@ -23,7 +23,7 @@ class BaseTestCases:
             self.assertEqual({"Canonical Ubuntu Linux 14.04.1"},
                              self._trie.search("ubuntu", "linux", "14", "04", "1"))
             self.assertEqual({"Microsoft Windows Vista"},
-                             self._trie.search("microsoft", "windows", "vista", strict_equal_key_only=True))
+                             self._trie.search("microsoft", "windows", "vista", best_only=True))
             self.assertEqual({"Apple iPad OS 16.1.2"}, self._trie.search("ipados", "16", "1", "2"))
             self.assertEqual({"Apple iPad OS -"}, self._trie.search("ipados"))
             self.assertEqual({"Apple macOS 13.1"}, self._trie.search("macos", "13", "1"))
@@ -39,6 +39,9 @@ class BaseTestCases:
                              self._trie.search("Linux" "pop-os" "5", "3", "0", "22", "generic", "#24", "system76",
                                                "1573659475", "19", "04", "26b2022", "Ubuntu", "SMP",
                                                "x86_64" "GNU/Linux"))
+
+        def test_with_mac_address(self):
+            self.assertEqual({"Apple iPhone OS 16.1"}, self._trie.search("3ccd362b4922", "iOS", "16", "1", "1"))
 
 
 operating_systems: dict = {
@@ -66,7 +69,8 @@ operating_systems: dict = {
     "Apple macOS 13.0": [["apple", None], ["macos"], ["13"], ["0"]],
     "Apple macOS 13.0.1": [["apple", None], ["macos"], ["13"], ["0"], ["1"]],
     "Apple macOS 13.1": [["apple", None], ["macos"], ["13"], ["1"]],
-    "Red Hat Enterprise Linux 8.6 Server Edition": [["redhat", None], ["enterprise"], ["linux"], ["8"], ["6"]]}
+    "Red Hat Enterprise Linux 8.6 Server Edition": [["redhat", None], ["enterprise"], ["linux"], ["8"], ["6"]],
+    "Apple iPhone OS 16.1": [["apple", None], ["iphone", "ios"], ["os", None], ["16"], ["1"]]}
 
 
 class TestSmallMatchStringTrie(BaseTestCases.AbstractTestMatchStringTrie):
@@ -119,4 +123,3 @@ class TestLargeMatchStringTrie(BaseTestCases.AbstractTestMatchStringTrie):
         self.assertEqual(
             {"Conectiva Linux", "Corel Linux", "Gentoo Linux", "Linux Kernel", "Mandriva Linux", "Novell SUSE Linux",
              "Oracle Linux", "Red Hat Linux"}, self._trie.search("pc", "linux", "gnu", best_only=False))
-        self.assertEqual({}, self._trie.search("iOS", "16", "3", "1"))
