@@ -3,7 +3,7 @@ import json
 import pathlib
 import unittest
 
-from ..libs.fetcher import parse_response
+from product_search.libs.fetcher import parse_response
 
 
 class TestFetcher(unittest.TestCase):
