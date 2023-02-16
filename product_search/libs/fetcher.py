@@ -24,7 +24,7 @@ def fetch_from_nvd_api(url: str = "https://services.nvd.nist.gov/rest/json/cpes/
                        cutoff: str = "1970-01-01T00:00:00.000",
                        exclude_keywords: list[str] = ["firmware"],
                        destination_dir: str = "/tmp/product_search",
-                       pause: float = 2
+                       pause: float = 6
                        ) -> str:
     """
     Fetch CPE strings using the NVD API, and store them locally.
@@ -50,11 +50,10 @@ def fetch_from_nvd_api(url: str = "https://services.nvd.nist.gov/rest/json/cpes/
                         "resultsPerPage": 100, "startIndex": start_index}
 
     with open(destination_file, "w") as f:
+        headers: dict = {"apiKey": api_key} if api_key else {}
         f.write("[\n")
         while tries > 0:
             query_str: str = urlencode(query_dict)
-            headers: dict = {"apiKey": api_key} if api_key else {}
-
             try:
                 response: Response = httpx.get(url + "?" + query_str, headers=headers, follow_redirects=True,
                                                timeout=60)
@@ -66,26 +65,27 @@ def fetch_from_nvd_api(url: str = "https://services.nvd.nist.gov/rest/json/cpes/
                                                              exclude_keywords=exclude_keywords)
 
                 if products is None:
-                    logging.info("")
+                    logging.info("No more products left.")
                     break
 
                 if not products:
-                    tries -= 1
-                    continue
+                    logging.debug("Product is empty or all results have been filtered out.")
+                else:
+                    for product in products:
+                        f.write(f"    {json.dumps(product)},\n")
 
-                for product in products:
-                    f.write(f"    {json.dumps(product)},\n")
-
-                tries = 10
+                tries = 20
+                query_dict["startIndex"] = query_dict["startIndex"] + query_dict["resultsPerPage"]
 
             except httpx.HTTPError as he:
                 logging.warning(f"Query \"{query_str.replace('%', '%%')}\" failed.", he)
                 tries -= 1
                 continue
-
-            # Continue with the next page. Pause if necessary.
-            query_dict["startIndex"] = query_dict["startIndex"] + query_dict["resultsPerPage"]
-            time.sleep(pause)
+            finally:
+                # Continue with the next page. Pause if necessary.
+                # Because, according to the docs, one has to pause for *six* seconds at least (I'm not making this up):
+                # https://nvd.nist.gov/developers/start-here
+                time.sleep(pause * (20 - tries) + 1)
 
         f.truncate(f.tell() - 2)
         f.seek(0, 2)
