@@ -64,7 +64,7 @@ class MatchStringTrie:
                 if strict_equal_key_only:
                     return self.__trie[permutation_key].copy()
 
-                if not results.get(0):
+                if not results.get(99):
                     results[99] = self.__trie[permutation_key].copy()
                 else:
                     results[99].update(self.__trie[permutation_key].copy())

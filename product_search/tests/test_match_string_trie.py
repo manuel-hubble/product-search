@@ -113,6 +113,10 @@ class TestLargeMatchStringTrie(BaseTestCases.AbstractTestMatchStringTrie):
     def test_large_approximate_match(self):
         self.assertEqual({"Apple iPad OS 16.0"}, self._trie.search("ipados", "16"))
         self.assertEqual({"Cisco IOS 11.0"}, self._trie.search("ios", "11", best_only=True))
-        self.assertEqual({'Microsoft Windows 10 1903'},
+        self.assertEqual({"Microsoft Windows 10 1903"},
                          self._trie.search("Windows", "10", "Pro", "10", "0", "19042", best_only=True))
         self.assertEqual({"Microsoft Windows Server 2016"}, self._trie.search("Windows", "Server", "2016"))
+        self.assertEqual(
+            {"Conectiva Linux", "Corel Linux", "Gentoo Linux", "Linux Kernel", "Mandriva Linux", "Novell SUSE Linux",
+             "Oracle Linux", "Red Hat Linux"}, self._trie.search("pc", "linux", "gnu", best_only=False))
+        self.assertEqual({}, self._trie.search("iOS", "16", "3", "1"))
