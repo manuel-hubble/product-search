@@ -1,6 +1,7 @@
 import json
 import pathlib
 import unittest
+from timeit import timeit
 
 from product_search.libs.match_string_trie import MatchStringTrie
 
@@ -9,12 +10,14 @@ class BaseTestCases:
     class AbstractTestMatchStringTrie(unittest.TestCase):
         _trie: MatchStringTrie
 
+        @timeit
         def test_empty_values(self):
             trie = MatchStringTrie({})
             self.assertEqual(set(), trie.search("one", "two", "three"))
 
             self.assertEqual(set(), self._trie.search())
 
+        @timeit
         def test_exact_match(self):
             self.assertEqual({"Canonical Ubuntu Linux 14.04.1"},
                              self._trie.search("canonical", "ubuntu", "linux", "14", "04", "1"))
@@ -31,6 +34,7 @@ class BaseTestCases:
             self.assertEqual({"Apple iPhone OS 5.0.1 iPod touch"},
                              self._trie.search("iphone", "os", "5", "0", "1", "ipodtouch"))
 
+        @timeit
         def test_approximate_match(self):
             # From `uname -a` on a System76 laptop:
             # Linux pop-os 5.3.0-22-generic #24+system76~1573659475~19.04~26b2022-Ubuntu SMP Wed Nov 13 20:0 x86_64
@@ -40,6 +44,7 @@ class BaseTestCases:
                                                "1573659475", "19", "04", "26b2022", "Ubuntu", "SMP",
                                                "x86_64" "GNU/Linux"))
 
+        @timeit
         def test_with_mac_address(self):
             self.assertEqual({"Apple iPhone OS 16.1"}, self._trie.search("3ccd362b4922", "iOS", "16", "1", "1"))
 
@@ -74,52 +79,65 @@ operating_systems: dict = {
 
 
 class TestSmallMatchStringTrie(BaseTestCases.AbstractTestMatchStringTrie):
-    def setUp(self) -> None:
-        self.maxDiff = None
-        self._trie = MatchStringTrie(operating_systems)
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.maxDiff = None
+        cls._trie = MatchStringTrie(operating_systems, eager_load=True)
 
+    @timeit
     def test_small_exact_match(self):
         self.assertEqual({"Apple iPhone OS 11.1.13"},
-                         self._trie.search("iphone", "os", "11", "1", "13", strict_equal_key_only=True))
+                         TestSmallMatchStringTrie._trie.search("iphone", "os", "11", "1", "13",
+                                                               strict_equal_key_only=True))
 
+    @timeit
     def test_small_approximate_match(self):
-        self.assertEqual({"Apple iPad OS 16.1"}, self._trie.search("ipados", "16"))
+        self.assertEqual({"Apple iPad OS 16.1"}, TestSmallMatchStringTrie._trie.search("ipados", "16"))
         self.assertEqual(
             {"Cisco IOS 11.1.13 IA", "Cisco IOS 11.1", "Apple iPhone OS 11.1.13"},
-            self._trie.search("ios", "11", best_only=False))
+            TestSmallMatchStringTrie._trie.search("ios", "11", best_only=False))
         self.assertEqual({"Microsoft Windows 10 1507 64-bit", "Microsoft Windows 10 1507 32-bit"},
-                         self._trie.search("Windows", "10", "Pro", "10", "0", "19042", best_only=False))
-        self.assertEqual({"Microsoft Windows Server 2012 R2"}, self._trie.search("Windows", "Server", "2016"))
+                         TestSmallMatchStringTrie._trie.search("Windows", "10", "Pro", "10", "0", "19042",
+                                                               best_only=False))
+        self.assertEqual({"Microsoft Windows Server 2012 R2"},
+                         TestSmallMatchStringTrie._trie.search("Windows", "Server", "2016"))
         self.assertEqual({"Red Hat Enterprise Linux 8.6 Server Edition"},
-                         self._trie.search("Red", "Hat", "Enterprise", "Linux", "6", "0"))
+                         TestSmallMatchStringTrie._trie.search("Red", "Hat", "Enterprise", "Linux", "6", "0"))
         self.assertEqual({"Microsoft Windows 10 1507 32-bit",
                           "Microsoft Windows 10 1507 64-bit",
                           "Microsoft Windows Server 2012 R2",
                           "Microsoft Windows Server 2012 R2 Service Pack 1 on X64",
                           "Microsoft Windows Vista"},
-                         self._trie.search("microsoft", "windows", best_only=False))
+                         TestSmallMatchStringTrie._trie.search("microsoft", "windows", best_only=False))
         self.assertEqual({"Cisco IOS 11.1.13 IA", "Apple iPhone OS 11.1.13"},
-                         self._trie.search("ios", "11", "1", "13", best_only=False, strict_equal_key_only=True))
+                         TestSmallMatchStringTrie._trie.search("ios", "11", "1", "13", best_only=False,
+                                                               strict_equal_key_only=True))
 
 
 class TestLargeMatchStringTrie(BaseTestCases.AbstractTestMatchStringTrie):
-    def setUp(self) -> None:
-        self.maxDiff = None
-        self._cpe_grokked_string_file_path = str(pathlib.Path.joinpath(pathlib.Path().parent.resolve(), "resources",
-                                                                       "operating_system-cpe-grokked-strings.json"))
-        with open(self._cpe_grokked_string_file_path) as f:
-            self._trie = MatchStringTrie(json.load(f))
+    @classmethod
+    def setUpClass(cls):
+        cls.maxDiff = None
+        cpe_grokked_string_file_path: str = str(pathlib.Path.joinpath(pathlib.Path().parent.resolve(), "resources",
+                                                                      "operating_system-cpe-grokked-strings.json"))
+        with open(cpe_grokked_string_file_path) as f:
+            cls._trie = MatchStringTrie(json.load(f), eager_load=True)
 
+    @timeit
     def test_large_exact_match(self):
         self.assertEqual({"Red Hat Enterprise Linux 6.0"},
-                         self._trie.search("Red", "Hat", "Enterprise", "Linux", "6", "0"))
+                         TestLargeMatchStringTrie._trie.search("Red", "Hat", "Enterprise", "Linux", "6", "0"))
 
+    @timeit
     def test_large_approximate_match(self):
-        self.assertEqual({"Apple iPad OS 16.0"}, self._trie.search("ipados", "16"))
-        self.assertEqual({"Cisco IOS 11.0"}, self._trie.search("ios", "11", best_only=True))
+        self.assertEqual({"Apple iPad OS 16.0"}, TestLargeMatchStringTrie._trie.search("ipados", "16"))
+        self.assertEqual({"Cisco IOS 11.0"}, TestLargeMatchStringTrie._trie.search("ios", "11", best_only=True))
         self.assertEqual({"Microsoft Windows 10 1903"},
-                         self._trie.search("Windows", "10", "Pro", "10", "0", "19042", best_only=True))
-        self.assertEqual({"Microsoft Windows Server 2016"}, self._trie.search("Windows", "Server", "2016"))
+                         TestLargeMatchStringTrie._trie.search("Windows", "10", "Pro", "10", "0", "19042",
+                                                               best_only=True))
+        self.assertEqual({"Microsoft Windows Server 2016"},
+                         TestLargeMatchStringTrie._trie.search("Windows", "Server", "2016"))
         self.assertEqual(
             {"Conectiva Linux", "Corel Linux", "Gentoo Linux", "Linux Kernel", "Mandriva Linux", "Novell SUSE Linux",
-             "Oracle Linux", "Red Hat Linux"}, self._trie.search("pc", "linux", "gnu", best_only=False))
+             "Oracle Linux", "Red Hat Linux"},
+            TestLargeMatchStringTrie._trie.search("pc", "linux", "gnu", best_only=False))

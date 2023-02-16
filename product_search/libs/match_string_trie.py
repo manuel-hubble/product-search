@@ -16,9 +16,12 @@ class MatchStringTrie:
     # TODO: this seems to be abandoned, perhaps we should be using macaddress.io instead.
     __mac_database: MacLookup
 
-    def __init__(self, match_string_data: dict[str, list[list[str]]]):
+    def __init__(self, match_string_data: dict[str, list[list[str]]], eager_load=False):
         self.__match_string_data = match_string_data
         self.__mac_regex = re.compile(r"^([0-9a-fA-F]{2}:){5}([0-9a-fA-F]{2})|([0-9a-fA-F]{12})$")
+
+        if eager_load:
+            self.__load_match_string_data()
 
     def __load_match_string_data(self):
         """
