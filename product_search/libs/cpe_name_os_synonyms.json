@@ -1,0 +1,21 @@
+{
+  "ubuntu_linux": [
+    "ubuntu"
+  ],
+  "linux": [
+    null
+  ],
+  "iphone": [
+    "ios"
+  ],
+  "os": [
+    null
+  ],
+  "kernel": [
+    null
+  ],
+  "GNU/Linux": [
+    "linux"
+  ]
+}
+

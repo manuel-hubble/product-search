@@ -7,21 +7,21 @@ from product_search.libs.grokker import grok_cpe_file, transform_cpe_name
 
 class TestGrokCpeFile(unittest.TestCase):
     _cpe_match_string_file_path: str
-    _os_synonyms_file_path: str
+    _cpe_name_os_synonyms_file_path: str
     _cpe_grokked_string_file_path: str
 
     def setUp(self) -> None:
         self.maxDiff = None
         self._cpe_match_string_file_path = str(pathlib.Path.joinpath(pathlib.Path().parent.resolve(), "resources",
                                                                      "operating_system-cpe-match-strings.json"))
-        self._os_synonyms_file_path = str(pathlib.Path.joinpath(pathlib.Path().parent.resolve(), "resources",
-                                                                "os_synonyms.json"))
+        self._cpe_name_os_synonyms_file_path = str(pathlib.Path.joinpath(pathlib.Path().parent.resolve(), "resources",
+                                                                         "cpe_name_os_synonyms.json"))
         self._cpe_grokked_string_file_path = str(pathlib.Path.joinpath(pathlib.Path().parent.resolve(), "resources",
                                                                        "operating_system-cpe-grokked-strings.json"))
 
     def test_load_cpe_file(self):
         grokked_cpe_data: dict = grok_cpe_file(self._cpe_match_string_file_path,
-                                               synonyms_file=self._os_synonyms_file_path)
+                                               synonyms_file=self._cpe_name_os_synonyms_file_path)
         self.assertIsNotNone(grokked_cpe_data)
         self.assertIsInstance(grokked_cpe_data, dict)
 

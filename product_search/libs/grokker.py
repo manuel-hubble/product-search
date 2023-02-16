@@ -16,7 +16,7 @@ OS_STRING_SPECIAL_CHARACTERS: str = r"[_,:.)(\\]"
 
 
 def grok_cpe_file(input_file: str = "/tmp/product_search/cpe-match-strings.json",
-                  synonyms_file: str = "./os_synonyms.json", part=Part.OPERATING_SYSTEM,
+                  synonyms_file: str = "./cpe_name_os_synonyms.json", part=Part.OPERATING_SYSTEM,
                   destination_dir="/tmp/product_search") -> dict[str, list[list[str]]]:
     """
 
