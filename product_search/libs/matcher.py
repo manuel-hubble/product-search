@@ -7,7 +7,7 @@ import pygtrie
 from mac_vendor_lookup import MacLookup
 
 
-class MatchStringTrie:
+class Matcher:
     __match_string_data: dict[str, list[list[str]]]
     __mac_regex: Pattern
 
